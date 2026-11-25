@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>英語×運動ゲーム</title>
+  <link rel="stylesheet" href="style.css?v=27" />
+</head>
+<body>
+  <main class="app">
+    <section id="title-screen" class="screen active">
+      <h1>英語×運動ゲーム</h1><p class="version-label">v0.28・難易度追加版（実機精度未確認）</p>
+      <p>英単語を学びながら体を動かそう！</p>
+      <div class="notice">
+        <p>周囲に人や物がないことを確認してください。</p>
+        <p>体調が悪い場合や痛みを感じた場合はプレイを中止してください。</p>
+      </div>
+      <button id="start-button" class="primary">ゲームを始める</button>
+    </section>
+
+    <section id="difficulty-screen" class="screen">
+      <h2>難易度を選んでください</h2>
+      <div class="difficulty-grid">
+        <button class="difficulty primary" data-level="beginner">初級<br><small>中学1年程度</small></button>
+        <button class="difficulty primary" data-level="intermediate">中級<br><small>中学2年程度</small></button>
+        <button class="difficulty primary" data-level="advanced">上級<br><small>中学3年程度</small></button>
+        <button class="difficulty primary" data-level="eiken2">英検2級相当<br><small>高校卒業程度</small></button>
+        <button class="difficulty primary" data-level="eikenPre1">英検準1級相当<br><small>大学中級程度</small></button>
+      </div>
+      <button class="secondary" data-action="back-title">タイトルへ戻る</button>
+    </section>
+
+    <section id="camera-screen" class="screen camera-screen">
+      <h2>カメラ確認</h2>
+      <p class="camera-instruction">カメラから少し離れ、正面を向き、頭から足首まで全身が映る位置に立ってください。</p>
+
+      <div class="camera-device-row">
+        <label for="camera-select">使用するカメラ</label>
+        <select id="camera-select"></select>
+        <button id="refresh-cameras-button" class="secondary small-button">カメラ一覧を更新</button>
+      </div>
+
+      <div class="camera-layout">
+        <div id="camera-stage-home">
+          <div id="shared-camera-stage" class="camera-stage" aria-label="Webカメラ映像と姿勢ランドマーク">
+            <video id="webcam" autoplay playsinline muted></video>
+            <canvas id="pose-canvas"></canvas>
+            <div id="camera-placeholder" class="camera-placeholder">カメラはまだ起動していません</div>
+          </div>
+        </div>
+
+        <div class="camera-panel">
+          <div id="model-status" class="status-card">MediaPipe：未初期化</div>
+          <div id="camera-status" class="status-card">カメラ：停止中</div>
+          <div id="camera-name" class="status-card">使用中：未選択</div>
+          <div id="pose-status" class="status-card">姿勢：未検出</div>
+          <div id="gesture-status" class="status-card">開始ポーズ：全身認識後に両手を上げてください</div>
+          <div class="gesture-progress" aria-label="開始ポーズ維持時間">
+            <div id="gesture-progress-bar" class="gesture-progress-bar"></div>
+          </div>
+          <p class="camera-note">全身を認識したら、両手を肩より上に約1.5秒上げるとゲーム開始の5秒カウントダウンに進みます。ボタン操作でも開始できます。</p>
+          <p class="camera-note">映像は鏡のように左右反転して表示します。姿勢判定には反転前の映像を使用します。</p>
+        </div>
+      </div>
+
+      <div class="camera-actions">
+        <button id="enable-camera-button" class="primary">カメラを起動</button>
+        <button id="continue-camera-button" class="primary" disabled>ボタンでゲームへ進む</button>
+        <button id="stop-camera-button" class="secondary" disabled>カメラを停止</button>
+        <button class="secondary" data-action="back-difficulty">難易度選択へ戻る</button>
+      </div>
+
+      <div id="camera-error" class="error-message hidden"></div>
+    </section>
+
+    <section id="countdown-screen" class="screen">
+      <h2>準備してください</h2>
+      <div id="countdown-number" class="countdown">5</div>
+      <p>そのまま全身がカメラに映る位置で待ってください。</p>
+    </section>
+
+    <section id="game-screen" class="screen game-screen">
+      <div class="game-header">
+        <span id="question-progress">Q1 / 10</span>
+        <span id="timer">残り 10秒</span>
+      </div>
+
+      <div id="post-answer-overlay"><div id="feedback" class="feedback hidden" role="status" aria-live="polite"></div>      <div id="recovery-panel" class="hidden" role="status" aria-live="polite">
+        <div id="recovery-message"></div>
+        <details id="debug-recovery"><summary>開発・発表用バックアップ</summary>
+          <label><input type="checkbox" id="manual-confirm"> カメラによる両手上げ確認を省略する</label>
+          <button id="manual-next" class="secondary small-button" disabled>手動で次へ（2秒経過後）</button>
+        </details>
+      </div>
+</div><div id="answer-confirmation" class="answer-confirmation" role="status" aria-live="polite" aria-atomic="true">v0.27｜あなたの回答: 未回答</div>
+
+      <div class="game-layout">
+        <div class="game-question-panel">
+          <div id="word" class="word">library</div>
+          <p class="instruction">正しい意味に対応する動作をしてください</p>
+          <div id="choices" class="choices"></div><section id="b-diagnostics" class="b-diagnostics" aria-label="Bの判定チェック">
+              <h3>Bの判定チェック</h3>
+              <p data-b-summary role="status" aria-live="polite">カメラを起動して全身を映してください</p>
+              <div class="b-hold"><label for="b-hold-progress">3秒保持</label><progress id="b-hold-progress" data-b-progress max="3000" value="0"></progress><strong data-b-time>0.0 / 3.0秒</strong></div>
+              <p data-b-reset class="b-reset"></p>
+              <details open><summary>条件の一覧（現在値と目安）</summary><p class="b-unit-note">高さ・変化の%は胴の長さに対する比率。左右は本人の左右です。</p><ul data-b-checks class="b-checks"></ul></details>
+            </section>
+        </div>
+
+        <aside class="game-side-panel">
+          <div class="game-camera-title">カメラ映像</div>
+          <div id="game-camera-slot" class="game-camera-slot"></div>
+          <div class="motion-monitor">
+            <div id="motion-status" class="motion-status">動作認識：通常姿勢で待機してください</div>
+            
+            <div id="last-recognition" role="status">直近の認識：なし</div><div id="motion-metrics"></div><div class="motion-guide">A=スクワット（3秒） / B=片腕上げ側屈（3秒） / C=サイドランジ（3秒） / D=ジャンプ（3回）</div><p class="camera-note">B：片腕を頭上に伸ばし、反対の手を下げて、上げた腕と反対側へ側屈。3秒保持してください。左右どちらでも使えます。次へ進むときは両手を上げます。A・B・Cの姿勢保持中とDの連続ジャンプ中は、考える時間のカウントダウンが止まります。姿勢をやめると再開し、保持は最初からです。ジャンプは着地を挟んで3回、2.5秒以上空くと回数がリセットされます。</p>
+          </div>
+          <div class="debug-help">
+            バックアップ：1=A / 2=B / 3=C / 4=D / N=スキップ
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="result-screen" class="screen">
+      <h2 id="result-heading">結果</h2><p id="round-summary"></p>
+      <div class="result-card">
+        <p id="result-score">正解数：0 / 10</p>
+        <p id="result-rate">正答率：0%</p>
+      </div>
+      <section class="review-section" aria-labelledby="review-heading">
+        <h3 id="review-heading">間違えた単語を復習しよう</h3>
+        <p id="review-count" class="review-count"></p>
+        <p class="review-description">不正解・時間切れ・スキップの単語を、正しい意味と一緒に振り返れます。</p>
+        <p id="review-empty" class="review-empty hidden">全問正解！復習する単語はありません。</p>
+        <ul id="review-list" class="review-list"></ul>
+      </section>
+      <p class="review-play-note">復習も考える時間は1問10秒。運動判定中はタイマーが一時停止します。5秒のカウントダウン後に始まります。</p>
+      <button id="review-retry-button" class="primary hidden">間違えた単語だけ復習する</button>
+      <button id="retry-button" class="secondary">新しい10問で遊ぶ</button>
+      <button class="secondary" data-action="back-title">タイトルへ戻る</button>
+    </section>
+  </main>
+
+  <script src="questions.js?v=28"></script>
+  <script type="module" src="pose.js?v=27"></script>
+  <script type="module" src="main.js?v=28"></script>
+</body>
+</html>
+
+
+
+
+
+
+
