@@ -82,8 +82,8 @@ export function classify(m, baseline, grounded) {
   const spread = footSpreadGain(m, baseline);
   const steppedSideways = spread >= 0.25 && hipShift >= 0.16;
   const shiftedInWideStance = m.footSpan / baseline.scale >= 1.15 && hipShift >= 0.27;
-  if ((steppedSideways || shiftedInWideStance) && bentKnee <= 145 &&
-      straightKnee >= 155 && m.asym >= 18 &&
+  if ((steppedSideways || shiftedInWideStance) && bentKnee <= 135 &&
+      straightKnee >= 160 && m.asym >= 25 &&
       m.tilt < C.lungeMaxTilt) return 2;
 
   const drop = (m.hip - baseline.hip) / baseline.scale;
