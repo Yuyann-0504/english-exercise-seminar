@@ -12,10 +12,56 @@ const QUESTION_BANK = {
     ["famous","有名な","形容詞"],["important","重要な","形容詞"],["different","異なる","形容詞"],["careful","注意深い","形容詞"],["popular","人気のある","形容詞"]
   ],
   advanced: [
-    ["environment","環境","名詞"],["experience","経験","名詞"],["information","情報","名詞"],["culture","文化","名詞"],["technology","技術","名詞"],
-    ["opportunity","機会","名詞"],["community","地域社会","名詞"],["relationship","関係","名詞"],["decision","決定","名詞"],["education","教育","名詞"],
-    ["improve","改善する","動詞"],["continue","続ける","動詞"],["develop","発展させる","動詞"],["explain","説明する","動詞"],["compare","比較する","動詞"],
-    ["necessary","必要な","形容詞"],["possible","可能な","形容詞"],["traditional","伝統的な","形容詞"],["successful","成功した","形容詞"],["international","国際的な","形容詞"]
+    [
+      "environment",
+      "環境",
+      "名詞"
+    ],
+    [
+      "experience",
+      "経験",
+      "名詞"
+    ],
+    [
+      "culture",
+      "文化",
+      "名詞"
+    ],
+    [
+      "technology",
+      "技術",
+      "名詞"
+    ],
+    [
+      "improve",
+      "改善する",
+      "動詞"
+    ],
+    [
+      "explain",
+      "説明する",
+      "動詞"
+    ],
+    [
+      "compare",
+      "比較する",
+      "動詞"
+    ],
+    [
+      "necessary",
+      "必要な",
+      "形容詞"
+    ],
+    [
+      "traditional",
+      "伝統的な",
+      "形容詞"
+    ],
+    [
+      "international",
+      "国際的な",
+      "形容詞"
+    ]
   ],
   eiken2: [
     ["poverty","貧困","名詞"],
@@ -62,7 +108,7 @@ function shuffleArray(array) {
 
 function buildQuestion(word, correctMeaning, category) {
   // 復習時も、単語から元の級を特定して同じ範囲の選択肢を作る。
-  const examBank = [QUESTION_BANK.eiken2, QUESTION_BANK.eikenPre1].find(
+  const examBank = [QUESTION_BANK.advanced, QUESTION_BANK.eiken2, QUESTION_BANK.eikenPre1].find(
     bank => bank.some(([entryWord]) => entryWord === word)
   );
   const available = examBank
