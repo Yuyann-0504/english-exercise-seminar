@@ -86,6 +86,7 @@ export function createFrontMotionDetector() {
   let baseline=null, neutralSince=null, candidate=null, since=null, armed=false, lastSample=null, diagnosticReset='', jumpCount=0, lastJumpAt=null;
   const squatTarget = 3;
   const squatGapMs = 4000;
+  let lateralInProgress = false;
   let squatCount = 0, squatDown = false, squatAt = null, squatExpired = false;
   function clearSquats() {
     squatCount = 0;
@@ -93,7 +94,7 @@ export function createFrontMotionDetector() {
     squatAt = null;
     squatExpired = false;
   }
-  function reset() { clearSquats(); baseline=null; neutralSince=null; candidate=null; since=null; armed=false; lastSample=null; diagnosticReset=''; jumpCount=0; lastJumpAt=null; }
+  function reset() { lateralInProgress = false; clearSquats(); baseline=null; neutralSince=null; candidate=null; since=null; armed=false; lastSample=null; diagnosticReset=''; jumpCount=0; lastJumpAt=null; }
   function sample(points, now, jump, aspect=1, worldPoints=null) {
     if(lastSample!==null && now-lastSample>C.sideMaxFrameGapMs) {reset();diagnosticReset='直近の計測リセット：映像の更新が途切れました';}
     lastSample=now;
@@ -119,12 +120,22 @@ export function createFrontMotionDetector() {
       }
       return {index:null,active:true,message:`ジャンプ ${jumpCount} / ${C.jumpCount}回（着地して次のジャンプ）`,metrics};
     }
-    const index=classify(m,baseline,jump.grounded);
+    let index = classify(m, baseline, jump.grounded);
+    const lateral = index === 2 || isLateralMovement(m, baseline);
+    if (lateral) {
+      lateralInProgress = true;
+      neutralSince = null;
+      clearSquats();
+    } else if (neutralSince !== null && now - neutralSince >= 100) {
+      lateralInProgress = false;
+    }
+    // 足を戻す途中で両膝が曲がっても、横への動作が終わるまでAを受け付けない。
+    if (lateralInProgress && index === 0) index = null;
     // 着地の膝曲げをスクワットの開始として扱わない。
     if(jumpCount>0 && (index===null || now-lastJumpAt<C.jumpLandingGraceMs)) {
       return {index:null,active:true,message:`ジャンプ ${jumpCount} / ${C.jumpCount}回（続けてジャンプ）`,metrics};
     }
-    if(index === 1 || index === 2 || !jump.grounded || isLateralMovement(m, baseline)) clearSquats();
+    if(index === 1 || !jump.grounded) clearSquats();
     if(squatAt !== null && now - squatAt >= squatGapMs) {
       clearSquats();
       squatExpired = !neutral;
@@ -153,6 +164,11 @@ export function createFrontMotionDetector() {
     }
     if(index === null && squatAt !== null) {
       return {index:null, active:true, message:`スクワット ${squatCount} / ${squatTarget}回（${squatDown ? '立ち上がってください' : '続けてスクワット'}）`, metrics};
+    }
+    if (index === null && lateralInProgress) {
+      candidate = null;
+      since = null;
+      return {index:null, active:false, message:'C：踏み込んだ側の膝を曲げ、反対の脚を伸ばしてください', metrics};
     }
     if(index===null) {if(candidate?.startsWith('1:'))diagnosticReset=`直近の計測リセット：${side.reason}`;candidate=null;since=null;return {index:null,active:false,message:'準備OK',metrics};}
     jumpCount=0;lastJumpAt=null;
