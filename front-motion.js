@@ -1,4 +1,4 @@
-import { CONFIG as C } from './motion-config.js?v=27';
+import { CONFIG as C } from './motion-config.js?v=lunge-fix';
 const REQUIRED = [11,12,23,24,25,26,27,28];
 const mid = (a,b) => ({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
 function angleDegrees(a,b,c) {
@@ -17,7 +17,7 @@ export function measure(points, aspect=1) {
   const left=angleDegrees(p[23],p[25],p[27]), right=angleDegrees(p[24],p[26],p[28]);
   return {tilt:Math.abs(Math.atan2(shoulder.x-hip.x,hip.y-shoulder.y)*180/Math.PI),
     width:Math.abs(p[27].x-p[28].x)/shoulderWidth,left,right,asym:Math.abs(left-right),
-    hip:hip.y,shoulder:shoulder.y,scale,leftFoot:p[27].y,rightFoot:p[28].y,foot:(p[27].y+p[28].y)/2};
+    hip:hip.y,hipX:hip.x,shoulder:shoulder.y,scale,leftFoot:p[27].y,rightFoot:p[28].y,foot:(p[27].y+p[28].y)/2};
 }
 // 腕の位置は画像の縦横比を補正。左右は画面内の肩の並びから判断する。
 export function measureSideArm(points, aspect=1) {
@@ -60,10 +60,19 @@ export function classify(m, baseline, grounded) {
   // Bは回答前の足首高さを使い、ジャンプ用の接地フラグから独立させる。
   if(sideStatus(m,baseline).ok) return 1;
   if(!grounded) return null;
-  if(m.width>=C.lungeWidth && Math.min(m.left,m.right)<C.lungeBentKnee && Math.max(m.left,m.right)>=C.lungeStraightKnee && m.asym>=C.lungeAsymmetry && m.tilt<C.lungeMaxTilt) return 2;
-  const drop=(m.hip-baseline.hip)/baseline.scale;
-  if(m.tilt<C.squatMaxTilt && m.width<C.squatMaxWidth && m.asym<C.squatAsymmetry &&
-    ((m.left<C.squatKnee && m.right<C.squatKnee) || drop>C.squatDrop)) return 0;
+  const bentKnee = Math.min(m.left, m.right);
+  const straightKnee = Math.max(m.left, m.right);
+  const hipShift = Math.abs(m.hipX - baseline.hipX) / baseline.scale;
+  const wideStance = m.width >= C.lungeWidth &&
+    (m.width - baseline.width >= C.lungeWidthGain || hipShift >= C.lungeHipShift);
+  if (wideStance && bentKnee < C.lungeBentKnee && straightKnee >= C.lungeStraightKnee &&
+      m.asym >= C.lungeAsymmetry && m.tilt < C.lungeMaxTilt) return 2;
+
+  const drop = (m.hip - baseline.hip) / baseline.scale;
+  const bothKneesBent = straightKnee < C.squatKnee ||
+    (straightKnee < C.squatDropMaxKnee && drop > C.squatDrop);
+  if (m.tilt < C.squatMaxTilt && m.width < C.squatMaxWidth &&
+      m.asym < C.squatAsymmetry && hipShift < C.squatMaxHipShift && bothKneesBent) return 0;
   return null;
 }
 export function createFrontMotionDetector() {
