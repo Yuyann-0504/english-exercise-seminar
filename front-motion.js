@@ -1,4 +1,4 @@
-import { CONFIG as C } from './motion-config.js?v=lunge-fix';
+import { CONFIG as C } from './motion-config.js?v=lunge-v2';
 const REQUIRED = [11,12,23,24,25,26,27,28];
 const mid = (a,b) => ({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
 function angleDegrees(a,b,c) {
@@ -55,6 +55,13 @@ export function sideStatus(m, baseline) {
   if(Math.abs(m.leftFoot-baseline.leftFoot)/baseline.scale>=C.sideFootTolerance || Math.abs(m.rightFoot-baseline.rightFoot)/baseline.scale>=C.sideFootTolerance) return {ok:false,reason:'両足を元の位置につけてください'};
   return {ok:true,side:m.arm.side,reason:'片腕上げ側屈の姿勢OK'};
 }
+// 踏み込みの途中でも、横方向の変化があればスクワットとして数えない。
+function isLateralMovement(m, baseline) {
+  const hipShift = Math.abs(m.hipX - baseline.hipX) / baseline.scale;
+  return m.width - baseline.width >= C.squatMaxWidthGain ||
+    (hipShift >= C.squatLateralHipShift && m.asym >= C.lungeAsymmetry);
+}
+
 export function classify(m, baseline, grounded) {
   if(!m || !baseline) return null;
   // Bは回答前の足首高さを使い、ジャンプ用の接地フラグから独立させる。
@@ -71,7 +78,7 @@ export function classify(m, baseline, grounded) {
   const drop = (m.hip - baseline.hip) / baseline.scale;
   const bothKneesBent = straightKnee < C.squatKnee ||
     (straightKnee < C.squatDropMaxKnee && drop > C.squatDrop);
-  if (m.tilt < C.squatMaxTilt && m.width < C.squatMaxWidth &&
+  if (!isLateralMovement(m, baseline) && m.tilt < C.squatMaxTilt && m.width < C.squatMaxWidth &&
       m.asym < C.squatAsymmetry && hipShift < C.squatMaxHipShift && bothKneesBent) return 0;
   return null;
 }
@@ -117,7 +124,7 @@ export function createFrontMotionDetector() {
     if(jumpCount>0 && (index===null || now-lastJumpAt<C.jumpLandingGraceMs)) {
       return {index:null,active:true,message:`ジャンプ ${jumpCount} / ${C.jumpCount}回（続けてジャンプ）`,metrics};
     }
-    if(index === 1 || index === 2 || !jump.grounded) clearSquats();
+    if(index === 1 || index === 2 || !jump.grounded || isLateralMovement(m, baseline)) clearSquats();
     if(squatAt !== null && now - squatAt >= squatGapMs) {
       clearSquats();
       squatExpired = !neutral;
