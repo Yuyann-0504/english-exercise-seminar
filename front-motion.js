@@ -68,7 +68,16 @@ export function classify(m, baseline, grounded) {
 }
 export function createFrontMotionDetector() {
   let baseline=null, neutralSince=null, candidate=null, since=null, armed=false, lastSample=null, diagnosticReset='', jumpCount=0, lastJumpAt=null;
-  function reset() { baseline=null; neutralSince=null; candidate=null; since=null; armed=false; lastSample=null; diagnosticReset=''; jumpCount=0; lastJumpAt=null; }
+  const squatTarget = 3;
+  const squatGapMs = 4000;
+  let squatCount = 0, squatDown = false, squatAt = null, squatExpired = false;
+  function clearSquats() {
+    squatCount = 0;
+    squatDown = false;
+    squatAt = null;
+    squatExpired = false;
+  }
+  function reset() { clearSquats(); baseline=null; neutralSince=null; candidate=null; since=null; armed=false; lastSample=null; diagnosticReset=''; jumpCount=0; lastJumpAt=null; }
   function sample(points, now, jump, aspect=1, worldPoints=null) {
     if(lastSample!==null && now-lastSample>C.sideMaxFrameGapMs) {reset();diagnosticReset='直近の計測リセット：映像の更新が途切れました';}
     lastSample=now;
@@ -86,6 +95,7 @@ export function createFrontMotionDetector() {
     // 既存の離陸イベントは、着地するまで再発火しない。1回の滞空を複数回数えない。
     if(lastJumpAt!==null && now-lastJumpAt>=C.jumpSequenceGapMs) {jumpCount=0;lastJumpAt=null;}
     if(jump.jump) {
+      clearSquats();
       jumpCount+=1; lastJumpAt=now; candidate=null; since=null;
       if(jumpCount>=C.jumpCount) {
         armed=false;neutralSince=null;jumpCount=0;lastJumpAt=null;
@@ -97,6 +107,36 @@ export function createFrontMotionDetector() {
     // 着地の膝曲げをスクワットの開始として扱わない。
     if(jumpCount>0 && (index===null || now-lastJumpAt<C.jumpLandingGraceMs)) {
       return {index:null,active:true,message:`ジャンプ ${jumpCount} / ${C.jumpCount}回（続けてジャンプ）`,metrics};
+    }
+    if(index === 1 || index === 2 || !jump.grounded) clearSquats();
+    if(squatAt !== null && now - squatAt >= squatGapMs) {
+      clearSquats();
+      squatExpired = !neutral;
+    }
+    if(neutral) squatExpired = false;
+    if(index === 0) {
+      candidate = null;
+      since = null;
+      if(squatExpired) return {index:null, active:false, message:'立ち上がってスクワットをやり直してください', metrics};
+      if(!squatDown) {
+        squatDown = true;
+        squatAt = now;
+      }
+      return {index:null, active:true, message:`スクワット ${squatCount} / ${squatTarget}回（立ち上がると1回）`, metrics};
+    }
+    if(squatDown && neutralSince !== null && now - neutralSince >= 100) {
+      squatDown = false;
+      squatAt = now;
+      squatCount += 1;
+      if(squatCount === squatTarget) {
+        clearSquats();
+        armed = false;
+        neutralSince = null;
+        return {index:0, active:false, message:'認識しました', metrics};
+      }
+    }
+    if(index === null && squatAt !== null) {
+      return {index:null, active:true, message:`スクワット ${squatCount} / ${squatTarget}回（${squatDown ? '立ち上がってください' : '続けてスクワット'}）`, metrics};
     }
     if(index===null) {if(candidate?.startsWith('1:'))diagnosticReset=`直近の計測リセット：${side.reason}`;candidate=null;since=null;return {index:null,active:false,message:'準備OK',metrics};}
     jumpCount=0;lastJumpAt=null;
