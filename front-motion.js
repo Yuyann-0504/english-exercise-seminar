@@ -17,7 +17,7 @@ export function measure(points, aspect=1) {
   const left=angleDegrees(p[23],p[25],p[27]), right=angleDegrees(p[24],p[26],p[28]);
   return {tilt:Math.abs(Math.atan2(shoulder.x-hip.x,hip.y-shoulder.y)*180/Math.PI),
     width:Math.abs(p[27].x-p[28].x)/shoulderWidth,left,right,asym:Math.abs(left-right),
-    hip:hip.y,hipX:hip.x,shoulder:shoulder.y,scale,leftFoot:p[27].y,rightFoot:p[28].y,foot:(p[27].y+p[28].y)/2};
+    hip:hip.y,hipX:hip.x,footSpan:Math.abs(p[27].x-p[28].x),shoulder:shoulder.y,scale,leftFoot:p[27].y,rightFoot:p[28].y,foot:(p[27].y+p[28].y)/2};
 }
 // 腕の位置は画像の縦横比を補正。左右は画面内の肩の並びから判断する。
 export function measureSideArm(points, aspect=1) {
@@ -55,31 +55,37 @@ export function sideStatus(m, baseline) {
   if(Math.abs(m.leftFoot-baseline.leftFoot)/baseline.scale>=C.sideFootTolerance || Math.abs(m.rightFoot-baseline.rightFoot)/baseline.scale>=C.sideFootTolerance) return {ok:false,reason:'両足を元の位置につけてください'};
   return {ok:true,side:m.arm.side,reason:'片腕上げ側屈の姿勢OK'};
 }
-// 踏み込みの途中でも、横方向の変化があればスクワットとして数えない。
+// 肩幅の見かけの変化で足幅が広がったと誤判定しないよう、
+// 左右の足首間の距離を、直立時の胴長で正規化する。
+function footSpreadGain(m, baseline) {
+  return (m.footSpan - baseline.footSpan) / baseline.scale;
+}
+
 function isLateralMovement(m, baseline) {
   const hipShift = Math.abs(m.hipX - baseline.hipX) / baseline.scale;
-  return m.width - baseline.width >= C.squatMaxWidthGain ||
-    (hipShift >= C.squatLateralHipShift && m.asym >= C.lungeAsymmetry);
+  return footSpreadGain(m, baseline) >= 0.16 || hipShift >= C.squatMaxHipShift;
 }
 
 export function classify(m, baseline, grounded) {
-  if(!m || !baseline) return null;
-  // Bは回答前の足首高さを使い、ジャンプ用の接地フラグから独立させる。
-  if(sideStatus(m,baseline).ok) return 1;
-  if(!grounded) return null;
+  if (!m || !baseline) return null;
+  if (sideStatus(m, baseline).ok) return 1;
+  if (!grounded) return null;
+
   const bentKnee = Math.min(m.left, m.right);
   const straightKnee = Math.max(m.left, m.right);
   const hipShift = Math.abs(m.hipX - baseline.hipX) / baseline.scale;
-  const wideStance = m.width >= C.lungeWidth &&
-    (m.width - baseline.width >= C.lungeWidthGain || hipShift >= C.lungeHipShift);
-  if (wideStance && bentKnee < C.lungeBentKnee && straightKnee >= C.lungeStraightKnee &&
-      m.asym >= C.lungeAsymmetry && m.tilt < C.lungeMaxTilt) return 2;
+  const spread = footSpreadGain(m, baseline);
+  const steppedSideways = spread >= 0.16 && hipShift >= 0.10;
+  const shiftedInWideStance = m.footSpan / baseline.scale >= 1.05 && hipShift >= 0.22;
+  if ((steppedSideways || shiftedInWideStance) && bentKnee < C.lungeBentKnee &&
+      straightKnee >= C.lungeStraightKnee && m.asym >= C.lungeAsymmetry &&
+      m.tilt < C.lungeMaxTilt) return 2;
 
   const drop = (m.hip - baseline.hip) / baseline.scale;
   const bothKneesBent = straightKnee < C.squatKnee ||
     (straightKnee < C.squatDropMaxKnee && drop > C.squatDrop);
-  if (!isLateralMovement(m, baseline) && m.tilt < C.squatMaxTilt && m.width < C.squatMaxWidth &&
-      m.asym < C.squatAsymmetry && hipShift < C.squatMaxHipShift && bothKneesBent) return 0;
+  if (!isLateralMovement(m, baseline) && m.tilt < C.squatMaxTilt &&
+      m.asym < C.squatAsymmetry && bothKneesBent) return 0;
   return null;
 }
 export function createFrontMotionDetector() {
