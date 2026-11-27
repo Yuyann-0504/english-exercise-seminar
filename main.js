@@ -62,6 +62,7 @@ const screens = {
   title: document.getElementById("title-screen"),
   difficulty: document.getElementById("difficulty-screen"),
   camera: document.getElementById("camera-screen"),
+  practice: document.getElementById("practice-screen"),
   countdown: document.getElementById("countdown-screen"),
   game: document.getElementById("game-screen"),
   result: document.getElementById("result-screen")
@@ -86,6 +87,8 @@ function moveSharedCamera(targetName) {
 
   if (targetName === "game" && gameSlot && stage.parentElement !== gameSlot) {
     gameSlot.appendChild(stage);
+  } else if (targetName === "practice") {
+    document.getElementById("practice-camera-slot").appendChild(stage);
   } else if (targetName === "camera" && cameraHome && stage.parentElement !== cameraHome) {
     cameraHome.appendChild(stage);
   }
@@ -93,7 +96,7 @@ function moveSharedCamera(targetName) {
 
 function showScreen(name) {
   cancelRecovery();
-  Object.values(screens).forEach(s => s.classList.remove("active"));
+  Object.values(screens).forEach(s => s?.classList.remove("active"));
   screens[name].classList.add("active");
   // 画面を有効化してからカメラ要素を移動する。
   // 小さい画面でもゲーム中は必ず game-camera-slot 内に表示する。
@@ -364,20 +367,74 @@ function stopCameraIfNeeded() {
 document.getElementById("start-button").addEventListener("click", () => showScreen("difficulty"));
 document.getElementById("retry-button").addEventListener("click", () => startCountdown());
 document.getElementById("review-retry-button").addEventListener("click", startReviewRound);
-document.getElementById("continue-camera-button").addEventListener("click", () => startCountdown());
+let practiceIndex = 0;
+const practiceTitle = document.getElementById("practice-heading");
+const practiceBody = document.getElementById("practice-movement");
+const practiceFeedback = document.getElementById("practice-feedback");
+const practiceStart = document.getElementById("practice-start");
+
+function showPracticeMovement() {
+  const card = document.querySelectorAll("#instructions-screen .guide-motion-grid article")[practiceIndex];
+  practiceBody.replaceChildren(...Array.from(card.children, child => child.cloneNode(true)));
+  practiceTitle.textContent = `動作練習（${practiceIndex + 1} / ${MOTIONS.length}）`;
+}
+
+function beginPractice() {
+  if (!screens.camera.classList.contains("active")) return;
+  if (!screens.practice) {
+    startCountdown();
+    return;
+  }
+  practiceIndex = 0;
+  practiceFeedback.textContent = "";
+  practiceStart.hidden = true;
+  showPracticeMovement();
+  showScreen("practice");
+  window.poseController?.resetAnswerLatch?.();
+  practiceTitle.focus();
+}
+
+function finishPractice() {
+  if (screens.practice?.classList.contains("active")) startCountdown();
+}
+
+function recognizePracticeMotion(index) {
+  if (practiceIndex >= MOTIONS.length) return;
+  if (index !== practiceIndex) {
+    practiceFeedback.textContent = `${MOTIONS[index]}を認識しました。今は${MOTIONS[practiceIndex]}を練習します。`;
+    return;
+  }
+  practiceIndex += 1;
+  if (practiceIndex < MOTIONS.length) {
+    practiceFeedback.textContent = `${MOTIONS[index]}を認識しました。まっすぐ立ってから次の動作を試してください。`;
+    showPracticeMovement();
+    return;
+  }
+  practiceTitle.textContent = "動作練習完了";
+  practiceBody.replaceChildren();
+  practiceFeedback.textContent = "A〜Dの動作をすべて認識しました。";
+  practiceStart.hidden = false;
+  practiceStart.focus();
+}
+
+document.getElementById("continue-camera-button").addEventListener("click", beginPractice);
+document.getElementById("practice-skip")?.addEventListener("click", finishPractice);
+practiceStart?.addEventListener("click", finishPractice);
 
 
 window.addEventListener("pose-answer", event => {
-  if (!screens.game.classList.contains("active")) return;
-  const index = Number(event.detail?.index);
-  if (Number.isInteger(index) && index >= 0 && index <= 3) {
+  const index = event.detail?.index;
+  if (!Number.isInteger(index) || index < 0 || index >= MOTIONS.length) return;
+  if (screens.practice?.classList.contains("active")) {
+    recognizePracticeMotion(index);
+  } else if (screens.game.classList.contains("active")) {
     answer(index, `認識動作: ${event.detail.motion}`);
   }
 });
 
 window.addEventListener("pose-start-gesture", () => {
   if (screens.camera.classList.contains("active")) {
-    startCountdown();
+    beginPractice();
   }
 });
 
