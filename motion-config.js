@@ -9,8 +9,9 @@ export const CONFIG = {
   sideWristRise: .30, sideOtherWristDown: -.05,
   sideArmVisibility: .45, sideBothHandsMargin: .10,
   neutralTorsoRatio: .92, neutralShoulderTolerance: .08,
-  lungeWidth: 1.6, lungeWidthGain: 0.25, lungeBentKnee: 150, lungeStraightKnee: 151,
-  lungeAsymmetry: 16, lungeMaxTilt: 25, lungeHipShift: 0.12,
+  lungeWidth: 1.35, lungeWidthGain: 0.20, lungeBentKnee: 155, lungeStraightKnee: 145,
+  lungeAsymmetry: 10, lungeMaxTilt: 30, lungeHipShift: 0.15,
+  squatMaxWidthGain: 0.18, squatLateralHipShift: 0.10,
   squatMaxTilt: 18, squatMaxWidth: 1.85, squatAsymmetry: 20,
   squatKnee: 140, squatDrop: 0.16, squatDropMaxKnee: 152, squatMaxHipShift: 0.14,
   jumpFootRise: 0.20, jumpHipRise: 0.18, jumpShoulderRise: 0.12
