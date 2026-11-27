@@ -17,7 +17,7 @@ export function measure(points, aspect=1) {
   const left=angleDegrees(p[23],p[25],p[27]), right=angleDegrees(p[24],p[26],p[28]);
   return {tilt:Math.abs(Math.atan2(shoulder.x-hip.x,hip.y-shoulder.y)*180/Math.PI),
     width:Math.abs(p[27].x-p[28].x)/shoulderWidth,left,right,asym:Math.abs(left-right),
-    hip:hip.y,hipX:hip.x,footSpan:Math.abs(p[27].x-p[28].x),shoulder:shoulder.y,scale,leftFoot:p[27].y,rightFoot:p[28].y,foot:(p[27].y+p[28].y)/2};
+    hip:hip.y,hipX:hip.x,shoulderWidth,footSpan:Math.abs(p[27].x-p[28].x),shoulder:shoulder.y,scale,leftFoot:p[27].y,rightFoot:p[28].y,foot:(p[27].y+p[28].y)/2};
 }
 // 腕の位置は画像の縦横比を補正。左右は画面内の肩の並びから判断する。
 export function measureSideArm(points, aspect=1) {
@@ -44,13 +44,17 @@ export function measureSideArm(points, aspect=1) {
   if((shoulder.x-hip.x)*side>=0) return {reason:'上げた腕と反対側へ体を傾けてください'};
   return {ok:true,side:leftUp?'left':'right',reason:'片腕の姿勢OK',detail:`${detail} / 肘 ${elbow.toFixed(0)}°`};
 }
+export function sideStanceWidth(m, baseline) {
+  return m.footSpan / baseline.shoulderWidth;
+}
+
 export function sideStatus(m, baseline) {
   if(!m || !baseline) return {ok:false,reason:'直立して基準を取得してください'};
   if(!m.arm?.ok) return {ok:false,reason:m.arm?.reason || '両手首と上げる腕の肘を映してください'};
   if(m.tilt<C.sideMinTilt) return {ok:false,reason:'上げた腕と反対側へもう少し傾けてください'};
   if(m.tilt>C.sideMaxTilt) return {ok:false,reason:'傾きを少し戻してください'};
   if(Math.min(m.left,m.right)<C.sideKnee) return {ok:false,reason:'両膝を伸ばしてください'};
-  if(m.width>=C.sideMaxWidth) return {ok:false,reason:'足幅を通常位置へ戻してください'};
+  if(sideStanceWidth(m,baseline)>=C.sideMaxWidth) return {ok:false,reason:'足幅を通常位置へ戻してください'};
   if(Math.abs(m.hip-baseline.hip)/baseline.scale>=C.sideMaxHipDrop) return {ok:false,reason:'腰を元の高さへ戻してください'};
   if(Math.abs(m.leftFoot-baseline.leftFoot)/baseline.scale>=C.sideFootTolerance || Math.abs(m.rightFoot-baseline.rightFoot)/baseline.scale>=C.sideFootTolerance) return {ok:false,reason:'両足を元の位置につけてください'};
   return {ok:true,side:m.arm.side,reason:'片腕上げ側屈の姿勢OK'};
@@ -63,7 +67,8 @@ function footSpreadGain(m, baseline) {
 
 function isLateralMovement(m, baseline) {
   const hipShift = Math.abs(m.hipX - baseline.hipX) / baseline.scale;
-  return footSpreadGain(m, baseline) >= 0.16 || hipShift >= C.squatMaxHipShift;
+  // 足幅の小さな揺れや、側屈で腰が少し動いただけではAの回数を消さない。
+  return footSpreadGain(m, baseline) >= 0.25 && hipShift >= 0.12;
 }
 
 export function classify(m, baseline, grounded) {
@@ -75,10 +80,10 @@ export function classify(m, baseline, grounded) {
   const straightKnee = Math.max(m.left, m.right);
   const hipShift = Math.abs(m.hipX - baseline.hipX) / baseline.scale;
   const spread = footSpreadGain(m, baseline);
-  const steppedSideways = spread >= 0.16 && hipShift >= 0.10;
-  const shiftedInWideStance = m.footSpan / baseline.scale >= 1.05 && hipShift >= 0.22;
-  if ((steppedSideways || shiftedInWideStance) && bentKnee < C.lungeBentKnee &&
-      straightKnee >= C.lungeStraightKnee && m.asym >= C.lungeAsymmetry &&
+  const steppedSideways = spread >= 0.25 && hipShift >= 0.16;
+  const shiftedInWideStance = m.footSpan / baseline.scale >= 1.15 && hipShift >= 0.27;
+  if ((steppedSideways || shiftedInWideStance) && bentKnee <= 145 &&
+      straightKnee >= 155 && m.asym >= 18 &&
       m.tilt < C.lungeMaxTilt) return 2;
 
   const drop = (m.hip - baseline.hip) / baseline.scale;
@@ -127,7 +132,7 @@ export function createFrontMotionDetector() {
       return {index:null,active:true,message:`ジャンプ ${jumpCount} / ${C.jumpCount}回（着地して次のジャンプ）`,metrics};
     }
     let index = classify(m, baseline, jump.grounded);
-    const lateral = index === 2 || isLateralMovement(m, baseline);
+    const lateral = index === 2 || (index === null && isLateralMovement(m, baseline));
     if (lateral) {
       lateralInProgress = true;
       neutralSince = null;
