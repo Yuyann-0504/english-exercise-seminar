@@ -107,9 +107,11 @@ function shuffleArray(array) {
 }
 
 function buildQuestion(word, correctMeaning, category) {
-  const fixedIndex = QUESTION_BANK.advanced.findIndex(([entryWord]) => entryWord === word);
-  if (fixedIndex !== -1) {
-    const alternatives = QUESTION_BANK.advanced.filter(([entryWord]) => entryWord !== word);
+  const fixedBank = [QUESTION_BANK.advanced, QUESTION_BANK.eiken2, QUESTION_BANK.eikenPre1].find(
+    bank => bank.some(([entryWord]) => entryWord === word)
+  );
+  if (fixedBank) {
+    const alternatives = fixedBank.filter(([entryWord]) => entryWord !== word);
     const distractors = [
       ...alternatives.filter(entry => entry[2] === category),
       ...alternatives.filter(entry => entry[2] !== category)
@@ -125,19 +127,9 @@ function buildQuestion(word, correctMeaning, category) {
     };
   }
 
-  // 復習時も、単語から元の級を特定して同じ範囲の選択肢を作る。
-  const examBank = [QUESTION_BANK.eiken2, QUESTION_BANK.eikenPre1].find(
-    bank => bank.some(([entryWord]) => entryWord === word)
-  );
-  const available = examBank
-    ? examBank.filter(item => item[1] !== correctMeaning)
-    : null;
-  const distractors = available
-    ? [
-        ...shuffleArray(available.filter(item => item[2] === category)),
-        ...shuffleArray(available.filter(item => item[2] !== category))
-      ].slice(0, 3).map(item => item[1])
-    : shuffleArray(ALL_MEANINGS.filter(meaning => meaning !== correctMeaning)).slice(0, 3);
+  const distractors = shuffleArray(
+    ALL_MEANINGS.filter(meaning => meaning !== correctMeaning)
+  ).slice(0, 3);
 
   const choices = shuffleArray([
     { text: correctMeaning, word, correct: true },
