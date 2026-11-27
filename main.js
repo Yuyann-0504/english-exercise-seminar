@@ -159,7 +159,7 @@ function renderQuestion() { els.answerConfirmation.textContent = "v0.29｜あな
     div.innerHTML = `
       <div class="label">${LABELS[i]}</div>
       <div class="meaning">${choice.text}</div>
-      <div class="motion">動作：${MOTIONS[i]}（${i === 3 ? "3回" : "3秒保持"}）</div>
+      <div class="motion">動作：${MOTIONS[i]}（${i === 0 || i === 3 ? "3回" : "3秒保持"}）</div>
     `;
     els.choices.appendChild(div);
   });
