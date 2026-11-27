@@ -117,9 +117,12 @@ function buildQuestion(word, correctMeaning, category) {
     const choices = distractors.map(([entryWord, meaning]) => ({
       text: meaning, word: entryWord, correct: false
     }));
-    const answerIndex = fixedIndex % 4;
-    choices.splice(answerIndex, 0, { text: correctMeaning, word, correct: true });
-    return { word, category, choices, answerIndex };
+    choices.push({ text: correctMeaning, word, correct: true });
+    const shuffledChoices = shuffleArray(choices);
+    return {
+      word, category, choices: shuffledChoices,
+      answerIndex: shuffledChoices.findIndex(choice => choice.correct)
+    };
   }
 
   // 復習時も、単語から元の級を特定して同じ範囲の選択肢を作る。
