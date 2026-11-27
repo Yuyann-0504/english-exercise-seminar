@@ -58,6 +58,7 @@ const state = {
 };
 
 const screens = {
+  instructions: document.getElementById("instructions-screen"),
   title: document.getElementById("title-screen"),
   difficulty: document.getElementById("difficulty-screen"),
   camera: document.getElementById("camera-screen"),
@@ -380,10 +381,13 @@ window.addEventListener("pose-start-gesture", () => {
   }
 });
 
+document.getElementById("instructions-next")?.addEventListener("click", () => showScreen("camera"));
+
 document.querySelectorAll(".difficulty").forEach(button => {
   button.addEventListener("click", () => {
     state.level = button.dataset.level;
-    showScreen("camera");
+    showScreen("instructions");
+    document.getElementById("instructions-heading").focus();
   });
 });
 
