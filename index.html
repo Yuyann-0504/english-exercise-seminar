@@ -12,6 +12,8 @@
     @media (max-width: 550px) {
       #instructions-screen .guide-motion-grid { grid-template-columns: 1fr; }
     }
+      #practice-screen .guide-pose-image { width: 100%; height: 150px; object-fit: contain; background: white; }
+    #practice-start[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -80,19 +82,34 @@
           <div class="gesture-progress" aria-label="開始ポーズ維持時間">
             <div id="gesture-progress-bar" class="gesture-progress-bar"></div>
           </div>
-          <p class="camera-note">全身を認識したら、両手を肩より上に約1.5秒上げるとゲーム開始の5秒カウントダウンに進みます。ボタン操作でも開始できます。</p>
+          <p class="camera-note">全身を認識したら、両手を肩より上に約1.5秒上げると動作練習へ進みます。ボタンでも練習に進めます。</p>
           <p class="camera-note">映像は鏡のように左右反転して表示します。姿勢判定には反転前の映像を使用します。</p>
         </div>
       </div>
 
       <div class="camera-actions">
         <button id="enable-camera-button" class="primary">カメラを起動</button>
-        <button id="continue-camera-button" class="primary" disabled>ボタンでゲームへ進む</button>
+        <button id="continue-camera-button" class="primary" disabled>ボタンで練習へ進む</button>
         <button id="stop-camera-button" class="secondary" disabled>カメラを停止</button>
         <button class="secondary" data-action="back-difficulty">難易度選択へ戻る</button>
       </div>
 
       <div id="camera-error" class="error-message hidden"></div>
+    </section>
+
+    <section id="practice-screen" class="screen" aria-labelledby="practice-heading">
+      <h2 id="practice-heading" tabindex="-1">動作練習</h2>
+      <p>画面に出た動作をAからDまで順番に試します。動作の前に、全身を映してまっすぐ立ってください。</p>
+      <div class="camera-layout">
+        <div id="practice-camera-slot"></div>
+        <div>
+          <div id="practice-movement" class="choice"></div>
+          <p id="practice-status"></p>
+          <p id="practice-feedback" role="status"></p>
+        </div>
+      </div>
+      <button class="primary" id="practice-start" hidden>本番を始める</button>
+      <button class="secondary" id="practice-skip">練習をスキップして本番へ</button>
     </section>
 
     <section id="countdown-screen" class="screen">
@@ -165,8 +182,8 @@
   </main>
 
   <script src="questions.js?v=29-advanced10"></script>
-  <script type="module" src="pose.js?v=27"></script>
-  <script type="module" src="main.js?v=29-instructions"></script>
+  <script type="module" src="pose.js?v=29-practice"></script>
+  <script type="module" src="main.js?v=29-practice"></script>
 </body>
 </html>
 
