@@ -18,56 +18,28 @@ const QUESTION_BANK = {
     ["necessary","必要な","形容詞"],["possible","可能な","形容詞"],["traditional","伝統的な","形容詞"],["successful","成功した","形容詞"],["international","国際的な","形容詞"]
   ],
   eiken2: [
-    ["poverty", "貧困", "名詞"],
-    ["emergency", "緊急事態", "名詞"],
-    ["resource", "資源", "名詞"],
-    ["evidence", "証拠", "名詞"],
-    ["advantage", "利点", "名詞"],
-    ["confidence", "自信", "名詞"],
-    ["consequence", "結果", "名詞"],
-    ["responsibility", "責任", "名詞"],
-    ["recognize", "見分ける", "動詞"],
-    ["reduce", "減らす", "動詞"],
-    ["encourage", "励ます", "動詞"],
-    ["require", "必要とする", "動詞"],
-    ["protect", "守る", "動詞"],
-    ["participate", "参加する", "動詞"],
-    ["prevent", "防ぐ", "動詞"],
-    ["contribute", "貢献する", "動詞"],
-    ["available", "利用できる", "形容詞"],
-    ["convenient", "便利な", "形容詞"],
-    ["independent", "独立した", "形容詞"],
-    ["effective", "効果的な", "形容詞"],
-    ["flexible", "柔軟な", "形容詞"],
-    ["harmful", "有害な", "形容詞"],
-    ["specific", "具体的な", "形容詞"],
-    ["ordinary", "普通の", "形容詞"]
+    ["poverty","貧困","名詞"],
+    ["emergency","緊急事態","名詞"],
+    ["evidence","証拠","名詞"],
+    ["advantage","利点","名詞"],
+    ["reduce","減らす","動詞"],
+    ["require","必要とする","動詞"],
+    ["contribute","貢献する","動詞"],
+    ["independent","独立した","形容詞"],
+    ["effective","効果的な","形容詞"],
+    ["flexible","柔軟な","形容詞"]
   ],
   eikenPre1: [
-    ["allegation", "裏付けが示されていない申し立て", "名詞"],
-    ["consensus", "意見の一致", "名詞"],
-    ["disparity", "格差", "名詞"],
-    ["incentive", "動機づけとなるもの", "名詞"],
-    ["livelihood", "生計", "名詞"],
-    ["resilience", "立ち直る力", "名詞"],
-    ["scrutiny", "綿密な調査", "名詞"],
-    ["shortcoming", "欠点", "名詞"],
-    ["deter", "思いとどまらせる", "動詞"],
-    ["allocate", "割り当てる", "動詞"],
-    ["alleviate", "和らげる", "動詞"],
-    ["bolster", "強化する", "動詞"],
-    ["curtail", "削減する", "動詞"],
-    ["endorse", "支持を表明する", "動詞"],
-    ["impede", "妨げる", "動詞"],
-    ["reconcile", "和解させる", "動詞"],
-    ["coherent", "筋の通った", "形容詞"],
-    ["compulsory", "義務的な", "形容詞"],
-    ["detrimental", "悪影響を及ぼす", "形容詞"],
-    ["feasible", "実行可能な", "形容詞"],
-    ["imminent", "差し迫った", "形容詞"],
-    ["reluctant", "気が進まない", "形容詞"],
-    ["subtle", "微妙な", "形容詞"],
-    ["tedious", "退屈な", "形容詞"]
+    ["allegation","裏付けが示されていない申し立て","名詞"],
+    ["consensus","意見の一致","名詞"],
+    ["incentive","動機づけとなるもの","名詞"],
+    ["livelihood","生計","名詞"],
+    ["allocate","割り当てる","動詞"],
+    ["bolster","強化する","動詞"],
+    ["reconcile","和解させる","動詞"],
+    ["detrimental","悪影響を及ぼす","形容詞"],
+    ["feasible","実行可能な","形容詞"],
+    ["imminent","差し迫った","形容詞"]
   ]
 };
 
@@ -93,12 +65,15 @@ function buildQuestion(word, correctMeaning, category) {
   const examBank = [QUESTION_BANK.eiken2, QUESTION_BANK.eikenPre1].find(
     bank => bank.some(([entryWord]) => entryWord === word)
   );
-  const meanings = examBank
-    ? examBank.filter(item => item[2] === category).map(item => item[1])
-    : ALL_MEANINGS;
-  const distractors = shuffleArray(
-    meanings.filter(meaning => meaning !== correctMeaning)
-  ).slice(0, 3);
+  const available = examBank
+    ? examBank.filter(item => item[1] !== correctMeaning)
+    : null;
+  const distractors = available
+    ? [
+        ...shuffleArray(available.filter(item => item[2] === category)),
+        ...shuffleArray(available.filter(item => item[2] !== category))
+      ].slice(0, 3).map(item => item[1])
+    : shuffleArray(ALL_MEANINGS.filter(meaning => meaning !== correctMeaning)).slice(0, 3);
 
   const choices = shuffleArray([
     { text: correctMeaning, word, correct: true },
