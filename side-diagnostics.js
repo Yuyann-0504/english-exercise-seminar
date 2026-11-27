@@ -1,5 +1,5 @@
 import { CONFIG as C } from './motion-config.js?v=27';
-import { measure, measureSideArm, sideStatus } from './front-motion.js?v=27';
+import { measure, measureSideArm, sideStanceWidth, sideStatus } from './front-motion.js?v=motion-balance';
 const names={11:'左肩',12:'右肩',23:'左腰',24:'右腰',25:'左膝',26:'右膝',27:'左足首',28:'右足首',13:'左肘',14:'右肘',15:'左手首',16:'右手首'};
 const f=(n,d=0)=>Number.isFinite(n)?n.toFixed(d):'—';
 const angle=(a,b,c)=>{const u=[a.x-b.x,a.y-b.y],v=[c.x-b.x,c.y-b.y];const len=Math.hypot(...u)*Math.hypot(...v);return len?Math.acos(Math.max(-1,Math.min(1,(u[0]*v[0]+u[1]*v[1])/len)))*180/Math.PI:0;};
@@ -43,7 +43,10 @@ export function diagnoseSide(points=[],aspect=1,state={},now=0,result={}) {
   }
   add('tilt','上体の横傾き',m?m.tilt>=C.sideMinTilt && m.tilt<=C.sideMaxTilt:null,m?`${f(m.tilt)}°`:'—',`${C.sideMinTilt}～${C.sideMaxTilt}°`,'腰から上を横へ傾けてください');
   add('knees','両膝の伸び',m?Math.min(m.left,m.right)>=C.sideKnee:null,m?`左 ${f(m.left)}° / 右 ${f(m.right)}°`:'—',`両方${C.sideKnee}°以上`,'膝を伸ばしてください');
-  add('width','足幅',m?m.width<C.sideMaxWidth:null,m?f(m.width,2)+'倍':'—',`肩幅の${C.sideMaxWidth}倍未満`,'足幅を狭くしてください');
+  const stanceWidth = m && base ? sideStanceWidth(m, base) : null;
+  add('width','足幅',stanceWidth === null ? null : stanceWidth < C.sideMaxWidth,
+    stanceWidth === null ? '—' : f(stanceWidth, 2) + '倍',
+    `直立時の肩幅の${C.sideMaxWidth}倍未満`,'足幅を狭くしてください');
   const hip=m&&base?Math.abs(m.hip-base.hip)/base.scale:null;
   const feet=m&&base?Math.max(Math.abs(m.leftFoot-base.leftFoot),Math.abs(m.rightFoot-base.rightFoot))/base.scale:null;
   add('hip','腰の高さ',hip===null?null:hip<C.sideMaxHipDrop,hip===null?'基準待ち':f(hip*100)+'%',`変化${f(C.sideMaxHipDrop*100)}%未満`,'腰を落とさず元の高さへ');
