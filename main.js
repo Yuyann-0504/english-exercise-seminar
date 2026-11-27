@@ -135,7 +135,7 @@ function startGame(mode = "normal", reviewQuestions = null) {
   renderQuestion();
 }
 
-function renderQuestion() { els.answerConfirmation.textContent = "v0.28｜あなたの回答: 未回答"; els.answerConfirmation.classList.remove("has-answer");
+function renderQuestion() { els.answerConfirmation.textContent = "v0.29｜あなたの回答: 未回答"; els.answerConfirmation.classList.remove("has-answer");
   clearAnswerHighlight();
   // resetAnswerLatchは同期的にpose-exerciseを通知する。
   // 新しい時計を初期化するまでは、その通知で前問の時計を進めない。
