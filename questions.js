@@ -107,8 +107,23 @@ function shuffleArray(array) {
 }
 
 function buildQuestion(word, correctMeaning, category) {
+  const fixedIndex = QUESTION_BANK.advanced.findIndex(([entryWord]) => entryWord === word);
+  if (fixedIndex !== -1) {
+    const alternatives = QUESTION_BANK.advanced.filter(([entryWord]) => entryWord !== word);
+    const distractors = [
+      ...alternatives.filter(entry => entry[2] === category),
+      ...alternatives.filter(entry => entry[2] !== category)
+    ].slice(0, 3);
+    const choices = distractors.map(([entryWord, meaning]) => ({
+      text: meaning, word: entryWord, correct: false
+    }));
+    const answerIndex = fixedIndex % 4;
+    choices.splice(answerIndex, 0, { text: correctMeaning, word, correct: true });
+    return { word, category, choices, answerIndex };
+  }
+
   // 復習時も、単語から元の級を特定して同じ範囲の選択肢を作る。
-  const examBank = [QUESTION_BANK.advanced, QUESTION_BANK.eiken2, QUESTION_BANK.eikenPre1].find(
+  const examBank = [QUESTION_BANK.eiken2, QUESTION_BANK.eikenPre1].find(
     bank => bank.some(([entryWord]) => entryWord === word)
   );
   const available = examBank
