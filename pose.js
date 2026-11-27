@@ -96,6 +96,8 @@ function setStatus(element, text, className = "") {
 
 function setMotionStatus(text, className = "") {
   if (!motionStatus) return;
+  const practiceStatus = document.getElementById("practice-status");
+  if (practiceStatus && practiceStatus.textContent !== text) practiceStatus.textContent = text;
   motionStatus.textContent = text;
   motionStatus.className = `motion-status ${className}`.trim();
 }
@@ -268,7 +270,8 @@ function isFullBodyVisible(landmarks) {
 }
 
 function isGameActive() {
-  return document.getElementById("game-screen")?.classList.contains("active");
+  return document.getElementById("game-screen")?.classList.contains("active") ||
+    document.getElementById("practice-screen")?.classList.contains("active");
 }
 let lastPoseAt=0, lastDiagnosticAt=-Infinity, lastDiagnostic=null;
 function showBDiagnostics(points=[],result={},mode='answer',force=false) {
