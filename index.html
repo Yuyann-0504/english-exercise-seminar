@@ -30,6 +30,21 @@
       <button class="secondary" data-action="back-title">タイトルへ戻る</button>
     </section>
 
+    <section id="instructions-screen" class="screen" aria-labelledby="instructions-heading">
+      <h2 id="instructions-heading" tabindex="-1">遊び方</h2>
+      <p>英単語の意味を選び、選択肢のA〜Dに対応する動作で答えます。</p>
+      <div class="difficulty-grid">
+        <article class="choice"><h3>A　スクワット</h3><p>両膝を曲げて腰を落とし、3秒間保ちます。</p></article>
+        <article class="choice"><h3>B　片腕上げ側屈</h3><p>片腕を頭上に伸ばし、もう片方の手は下げます。上げた腕と反対側に上体を傾け、3秒間保ちます。</p></article>
+        <article class="choice"><h3>C　サイドランジ</h3><p>横に一歩踏み出し、踏み出した側の膝を曲げ、反対側の脚を伸ばして3秒間保ちます。</p></article>
+        <article class="choice"><h3>D　ジャンプ</h3><p>両足でジャンプし、着地を挟んで続けて3回跳びます。</p></article>
+      </div>
+      <h3>次の問題へ進むには</h3>
+      <p>正誤が表示されたら2秒待ちます。案内が出たら、両手を肩より上に上げて2秒間保ちます。</p>
+      <button class="primary" id="instructions-next">カメラ設定へ進む</button>
+      <button class="secondary" data-action="back-difficulty">難易度選択へ戻る</button>
+    </section>
+
     <section id="camera-screen" class="screen camera-screen">
       <h2>カメラ確認</h2>
       <p class="camera-instruction">カメラから少し離れ、正面を向き、頭から足首まで全身が映る位置に立ってください。</p>
@@ -144,7 +159,7 @@
 
   <script src="questions.js?v=29-advanced10"></script>
   <script type="module" src="pose.js?v=27"></script>
-  <script type="module" src="main.js?v=29"></script>
+  <script type="module" src="main.js?v=29-instructions"></script>
 </body>
 </html>
 
