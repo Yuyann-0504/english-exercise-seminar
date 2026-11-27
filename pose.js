@@ -3,7 +3,7 @@ import { bothHandsRaised } from "./next-gesture.js?v=27";
 import { createStandingMonitor } from "./recovery.js?v=27";
 const standingMonitor = createStandingMonitor();
 let recoveryWaiting = false;
-import { createFrontMotionDetector } from "./front-motion.js?v=lunge-fix";
+import { createFrontMotionDetector } from "./front-motion.js?v=lunge-v2";
 import { CONFIG } from "./motion-config.js?v=27";
 import { createJumpDetector } from "./jump.js?v=27";
 import {
